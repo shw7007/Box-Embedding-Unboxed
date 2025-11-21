@@ -56,7 +56,7 @@ class BoxEmbeddingModel(nn.Module):
         volume = torch.sum(c_offsets, dim=-1) + torch.sum(p_offsets, dim=-1)
         
         # 최종 Loss
-        return distance, volume
+        return distance, volume, c_offsets, p_offsets
 
     def get_all_boxes_for_visualization(self):
         """시각화를 위해 모든 박스 좌표 반환 (Detach)"""

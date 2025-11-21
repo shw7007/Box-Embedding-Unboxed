@@ -37,29 +37,35 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
         optimizer.zero_grad() # 기울기 초기화
         
         # positive sample 계산
-        pos_dist, pos_vol = model(child_indices, parent_indices)
+        pos_dist, pos_vol, c_offsets, p_offsets = model(child_indices, parent_indices)
 
         # negative sample 생성 및 계산
         num_samples = child_indices.size(0)
         random_parents = torch.randint(0, len(entity2id), (num_samples,))
         # 더 정교하게 하려면, 우연히 정답히 뽑히지 않게 필터링
-        neg_dist, neg_vol = model(child_indices, random_parents)
+        neg_dist, neg_vol, _, _ = model(child_indices, random_parents)
 
-        # 최종 Loss 계산
-        # (1) margin loss
+        # (1) margin loss = positive sample + negative sample
         margin_loss = F.relu(margin+pos_dist-neg_dist).mean()
         # (2) volume loss
         volume_loss = (pos_vol+neg_vol).mean()
         
-        total_loss = margin_loss + vol_weight * volume_loss
+        # (3) Orthogonal Overlap(Cross problem) 해결을 위한 loss추가
+        c_diff = (c_offsets[:, 0] - c_offsets[:, 1]) ** 2
+        p_diff = (p_offsets[:, 0] - p_offsets[:, 1]) ** 2
+        aspect_loss = torch.mean(c_diff + p_diff)
+        
+        aspect_weight = 0.2  # 가중치
+
+        loss = margin_loss + (vol_weight * volume_loss) + (aspect_weight*aspect_loss)
         
         # Backward Pass: 파라미터 업데이트
-        total_loss.backward()
+        loss.backward()
         optimizer.step()
         
         # --- 시각화 및 스냅샷 저장 로직 ---
         if epoch % snapshot_interval == 0 or epoch == 1:
-            print(f"Epoch {epoch}/{epochs} | Loss: {total_loss.item():.4f}")
+            print(f"Epoch {epoch}/{epochs} | Loss: {loss.item():.4f}")
             
             # 1. 현재 박스 좌표 가져오기 (GPU -> CPU)
             min_coords, max_coords = model.get_all_boxes_for_visualization()
@@ -68,8 +74,8 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
             fig, ax = plt.subplots(figsize=(8, 8))
             
             # 축 범위 고정 (박스가 움직이는 걸 잘 보려면 배경이 고정돼야 함)
-            ax.set_xlim(-8.0, 8.0) # 2.0 -> 5.0으로 확대
-            ax.set_ylim(-8.0, 8.0)
+            ax.set_xlim(-12.0, 12.0) # 2.0 -> 5.0으로 확대
+            ax.set_ylim(-12.0, 12.0)
             ax.set_title(f"Box Embedding Training (Epoch {epoch})")
             ax.set_xlabel("Dimension 1")
             ax.set_ylabel("Dimension 2")
