@@ -9,7 +9,7 @@ import shutil
 import gc
 import numpy as np
 
-def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot_interval=20, filename="Test"):
+def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot_interval=20, filename="Test", color_dict=None):
     # 1. 데이터 준비 (Text -> Index 변환)
     # 학습 데이터는 (Child, Parent) 쌍으로 구성됩니다.
     # triples: [(Child, IsA, Parent), ...]
@@ -28,8 +28,9 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
     
     print("=== 학습 시작 ===")
     
-    margin = 0.5
-    vol_weight = 0.001
+    margin = 2.5
+    vol_weight = 0.0005
+    color_list = ["black", "green", "blue", "red"]
 
     for epoch in range(1, epochs + 1):
         model.train() # 학습 모드
@@ -86,11 +87,10 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
                 
                 # 그룹별 색상 다르게 (시각적 디버깅용)
                 # Living Thing 계열은 파랑, My Class 계열은 빨강으로 표시되면 좋음
-                color = 'blue'
-                if entity_name in ['My class', 'Math', 'Engineering', 'Economics', 
-                                   'Linear Algebra', 'CO, eletromagnetic', 'Macro Econ', 'Mirco Econ']:
-                    color = 'red'
-
+                if color_dict is not None:
+                    color = color_list[color_dict[entity_name]]
+                else:
+                    color = "black"
                 # 사각형 객체 생성
                 rect = patches.Rectangle(
                     (x_min, y_min), width, height, 
@@ -100,7 +100,7 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
                 
                 # 텍스트도 겹치지 않게 작게
                 ax.text((x_min+x_max)/2, (y_min+y_max)/2, entity_name, 
-                        fontsize=7, ha='center', va='center', alpha=0.7)
+                        fontsize=10, ha='center', va='center', alpha=0.7)
             
             # [메모리 최적화 3] 파일로 저장하고 메모리 즉시 해제
             save_path = os.path.join(temp_dir, f"frame_{epoch:05d}.png")
@@ -116,7 +116,7 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
     
     print("=== GIF 변환 중... ===")
     frames = [imageio.imread(path) for path in image_paths]
-    imageio.mimsave('box_training.gif', frames, fps=10)
+    imageio.mimsave('{}.gif'.format(filename), frames, fps=20)
     shutil.rmtree(temp_dir) # 청소
     print("=== 완료 ===")
 

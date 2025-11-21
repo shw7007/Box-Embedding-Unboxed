@@ -13,7 +13,7 @@ class BoxEmbeddingModel(nn.Module):
         # 1. Center Embedding (위치)
         # Center를 -3.0 ~ 3.0 정도로 넓게 퍼뜨림 (기존 -1~1)
         self.center_embeddings = nn.Embedding(num_entities, embedding_dim)
-        nn.init.uniform_(self.center_embeddings.weight, -3.0, 3.0)
+        nn.init.uniform_(self.center_embeddings.weight, -4.0, 4.0)
 
         # 2. Offset Embedding (크기/너비)
         # 중요: 박스 크기는 무조건 양수여야 함.
