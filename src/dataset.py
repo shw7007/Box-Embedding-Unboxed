@@ -4,20 +4,36 @@ import matplotlib.pyplot as plt
 from collections import defaultdict, deque
 
 def dict_to_triples(data:dict, relation="IsA"):
-    triples = []
-    
-    # 2. Triple 생성 (Child, IsA, Parent), 기본 relation이 IsA
-    # Box Embedding에서는 보통 (Head, Relation, Tail)을 사용
-    # 여기서는 "Child는 Parent의 부분집합이다"를 표현
+    # 1. 역방향 매핑 (자식 -> 부모) 생성
+    # 트리를 거슬러 올라가기 위해 필요합니다.
+    child_to_parent = {}
+    all_entities = set()
+
     for parent, children in data.items():
+        all_entities.add(parent)
         for child in children:
-            # (Subject, Relation, Object)
-            triples.append((child, relation, parent))
+            all_entities.add(child)
+            child_to_parent[child] = parent  # 자식의 부모는 누구인가?
+
+    triples = []
+
+    # 2. 모든 Entity에 대해 족보 탐색 (Transitive Closure)
+    for entity in all_entities:
+        current_node = entity
+        
+        # 내 위로 부모가 없을 때까지(Root에 도달할 때까지) 계속 올라감
+        while current_node in child_to_parent:
+            parent = child_to_parent[current_node]
             
-            # Transitive Data (선택 사항): 
-            # 학습을 돕기 위해 'Dog IsA Animal' 같은 건너뛰는 관계도 추가할 수 있음
-            # 하지만 Box Embedding의 강력함을 보려면, 직접적인 관계만 주고
-            # 건너뛰는 관계를 잘 추론하는지 보는 것이 좋음. (일단은 생략)
+            # (나, IsA, 조상님) 관계 추가
+            # entity는 고정(나), parent는 계속 위로 올라감(아버지 -> 할아버지...)
+            triples.append((entity, 'IsA', parent))
+            
+            # 한 칸 위로 이동
+            current_node = parent
+
+    # 3. 중복 제거 (집합 변환) 및 정렬
+    triples = list(set(triples))
 
     return triples
 
@@ -44,6 +60,7 @@ def get_entity_levels(triples):
     Triples를 분석하여 각 Entity의 깊이(Level)를 계산합니다.
     Root(부모가 없는 노드) = Level 0
     """
+    """ 할아버지-손자 triple이 없는 경우의 코드
     # 1. 그래프 구성 (Adjacency List) 및 모든 노드 파악
     adj_list = defaultdict(list) # Parent -> Children
     all_entities = set()
@@ -77,7 +94,18 @@ def get_entity_levels(triples):
             if child not in levels:
                 levels[child] = current_level + 1
                 queue.append((child, current_level + 1))
-                
+                """
+    
+    # 할아버지-손자 triple이 추가된 경우 코드
+    levels = dict()
+    for child, rel, parent in triples:
+        if(child in levels.keys()):
+            levels[child] += 1
+        else:
+            levels[child] = 1
+    for _,__,parent in triples:
+        if(parent not in levels.keys()):
+            levels[parent] = 0
     return levels
 
 class data_dealer:

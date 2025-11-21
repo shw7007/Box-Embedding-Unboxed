@@ -28,8 +28,8 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
     
     print("=== 학습 시작 ===")
     
-    margin = 2.5
-    vol_weight = 0.0005
+    margin = 3
+    vol_weight = 0.001
     color_list = ["black", "green", "blue", "red"]
 
     for epoch in range(1, epochs + 1):
@@ -68,8 +68,8 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
             fig, ax = plt.subplots(figsize=(8, 8))
             
             # 축 범위 고정 (박스가 움직이는 걸 잘 보려면 배경이 고정돼야 함)
-            ax.set_xlim(-5.0, 5.0) # 2.0 -> 5.0으로 확대
-            ax.set_ylim(-5.0, 5.0)
+            ax.set_xlim(-8.0, 8.0) # 2.0 -> 5.0으로 확대
+            ax.set_ylim(-8.0, 8.0)
             ax.set_title(f"Box Embedding Training (Epoch {epoch})")
             ax.set_xlabel("Dimension 1")
             ax.set_ylabel("Dimension 2")
