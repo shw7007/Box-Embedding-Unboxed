@@ -15,8 +15,8 @@ hyperparamters = {
     "topological_trap" : False,
 
     # train.py -> train hyperparameters
-    "margin" : 5,
-    "vol_loss_weight" : 0.00,
+    "margin" : 3,
+    "vol_loss_weight" : 0.001,
     "aspect_ratio_loss_weight" : 0,
 
     # train.py -> visualization hyperparameters
