@@ -5,7 +5,9 @@ import torch.nn.functional as F
 class BoxEmbeddingModel(nn.Module):
     def __init__(self, num_entities, HPs:dict, embedding_dim=2, volume_temp=1.0):
         super().__init__()
-        
+
+        if(HPs["fix_random_seed"] is True) : torch.manual_seed(1)
+
         self.num_entities = num_entities
         self.embedding_dim = embedding_dim
         self.volume_temp = volume_temp  # Gumbel-Softmax 등에 쓰이는 온도 상수 (여기선 단순화)

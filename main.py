@@ -2,7 +2,7 @@ from src.dataset import data_dealer
 from src.model import BoxEmbeddingModel
 from src.train import train_and_visualize
 from hyperparamters.HPs import hyperparamters as HPs
-
+import argparse
 hierarchy = {
         #'Domain' : ['Science', 'Art', 'Business'],
 
@@ -21,6 +21,7 @@ hierarchy = {
         'Finance': ['Stock', 'Bond'],
         'Marketing': ['Ads', 'Branding']
 }
+
 
 k = data_dealer(hierarchy, on_grandparent=HPs["on_grandparent"])
 
