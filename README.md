@@ -6,7 +6,7 @@
 
 ## 1. Introduction
 **"Why Box embedding?"**
-
+![final gif](./gifs/final.gif)
 In KG(Knowledge Graph), representing a knowledge(entity) as a point-vector in the embedding space makes hard to answer queries over the KG. It lacks the ability to represent Hierarchy and Uncertainty of knowledge. 
 
 For example, think of answering complex queries involving sets of entities(e.g., *“where did Canadian citizens with
