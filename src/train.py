@@ -8,6 +8,7 @@ import os
 import shutil
 import gc
 import numpy as np
+from tqdm import tqdm
 
 def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, snapshot_interval=20, filename="Test", level_dict=None):
     # 1. 데이터 준비 (Text -> Index 변환)
@@ -33,7 +34,7 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
     aspect_ratio_loss_weight = HPs["aspect_ratio_loss_weight"]  # 가중치
     color_list = HPs["color_list"]
 
-    for epoch in range(1, epochs + 1):
+    for epoch in tqdm(range(1, epochs + 1), desc="Training", unit="epoch"):
         model.train() # 학습 모드
         optimizer.zero_grad() # 기울기 초기화
         
@@ -64,13 +65,13 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
         
         # --- 시각화 및 스냅샷 저장 로직 ---
         if epoch % snapshot_interval == 0 or epoch == 1:
-            print(f"Epoch {epoch}/{epochs} | Loss: {loss.item():.4f}")
+            tqdm.write(f"Epoch {epoch}/{epochs} | Loss: {loss.item():.4f}")
             
             # 1. 현재 박스 좌표 가져오기 (GPU -> CPU)
             min_coords, max_coords = model.get_all_boxes_for_visualization()
             
             # 2. 그림 그리기 (Matplotlib)
-            fig, ax = plt.subplots(figsize=(8, 8))
+            fig, ax = plt.subplots(figsize=(4, 4))
             
             # 축 범위 고정 (박스가 움직이는 걸 잘 보려면 배경이 고정돼야 함)
             ax.set_xlim(-HPs["screen_size_x"], HPs["screen_size_x"]) # 2.0 -> 5.0으로 확대
@@ -111,7 +112,7 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
             save_path = os.path.join(temp_dir, f"frame_{epoch:05d}.png")
             
             # [용량 최적화 4] dpi=72 (웹용 표준)으로 낮춤. (기본 100)
-            plt.savefig(save_path, dpi=72) 
+            plt.savefig(save_path, dpi=50) 
             plt.close(fig) # Canvas 닫기 (필수)
             gc.collect()   # 가비지 컬렉션 (필수)
             
