@@ -65,13 +65,13 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
         
         # --- 시각화 및 스냅샷 저장 로직 ---
         if epoch % snapshot_interval == 0 or epoch == 1:
-            tqdm.write(f"Epoch {epoch}/{epochs} | Loss: {loss.item():.4f}")
+            #tqdm.write(f"Epoch {epoch}/{epochs} | Loss: {loss.item():.4f}")
             
             # 1. 현재 박스 좌표 가져오기 (GPU -> CPU)
             min_coords, max_coords = model.get_all_boxes_for_visualization()
             
             # 2. 그림 그리기 (Matplotlib)
-            fig, ax = plt.subplots(figsize=(4, 4))
+            fig, ax = plt.subplots(figsize=(HPs["figure_size"], HPs["figure_size"]))
             
             # 축 범위 고정 (박스가 움직이는 걸 잘 보려면 배경이 고정돼야 함)
             ax.set_xlim(-HPs["screen_size_x"], HPs["screen_size_x"]) # 2.0 -> 5.0으로 확대
@@ -112,7 +112,7 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
             save_path = os.path.join(temp_dir, f"frame_{epoch:05d}.png")
             
             # [용량 최적화 4] dpi=72 (웹용 표준)으로 낮춤. (기본 100)
-            plt.savefig(save_path, dpi=50) 
+            plt.savefig(save_path, dpi=HPs["dpi"]) 
             plt.close(fig) # Canvas 닫기 (필수)
             gc.collect()   # 가비지 컬렉션 (필수)
             

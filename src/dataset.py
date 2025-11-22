@@ -3,7 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from collections import defaultdict, deque
 
-def dict_to_triples(data:dict, relation="IsA"):
+def dict_to_triples(data:dict, on_grandparent, relation="IsA"):
     # 1. 역방향 매핑 (자식 -> 부모) 생성
     # 트리를 거슬러 올라가기 위해 필요합니다.
     child_to_parent = {}
@@ -22,15 +22,19 @@ def dict_to_triples(data:dict, relation="IsA"):
         current_node = entity
         
         # 내 위로 부모가 없을 때까지(Root에 도달할 때까지) 계속 올라감
-        while current_node in child_to_parent:
-            parent = child_to_parent[current_node]
-            
-            # (나, IsA, 조상님) 관계 추가
-            # entity는 고정(나), parent는 계속 위로 올라감(아버지 -> 할아버지...)
-            triples.append((entity, 'IsA', parent))
-            
-            # 한 칸 위로 이동
-            current_node = parent
+        if on_grandparent:
+            while current_node in child_to_parent:
+                parent = child_to_parent[current_node]
+
+                # (나, IsA, 조상님) 관계 추가
+                # entity는 고정(나), parent는 계속 위로 올라감(아버지 -> 할아버지...)
+                triples.append((entity, 'IsA', parent))
+
+                # 한 칸 위로 이동
+                current_node = parent
+        elif current_node in child_to_parent:
+            # 증부모 관계 없이, 단순히 부모-자식 관계만 적용
+            triples.append((entity, 'IsA', child_to_parent[entity]))
 
     # 3. 중복 제거 (집합 변환) 및 정렬
     triples = list(set(triples))
@@ -98,7 +102,7 @@ def get_entity_levels(triples):
     
     # 할아버지-손자 triple이 추가된 경우 코드
     levels = dict()
-    for child, rel, parent in triples:
+    for child, _, parent in triples:
         if(child in levels.keys()):
             levels[child] += 1
         else:
@@ -109,10 +113,10 @@ def get_entity_levels(triples):
     return levels
 
 class data_dealer:
-    def __init__(self, data:dict):
+    def __init__(self, data:dict, on_grandparent=1):
         self.data = data
 
-        self.triples = dict_to_triples(data)
+        self.triples = dict_to_triples(data, on_grandparent)
 
         self.entities, self.entity2id = \
         triples_to_list(self.triples)
