@@ -111,9 +111,12 @@ def get_entity_levels(triples):
 class data_dealer:
     def __init__(self, data:dict):
         self.data = data
+
         self.triples = dict_to_triples(data)
+
         self.entities, self.entity2id = \
         triples_to_list(self.triples)
+        
         self.level_dict = get_entity_levels(self.triples)
         
         #not use in console environment

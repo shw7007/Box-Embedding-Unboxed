@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class BoxEmbeddingModel(nn.Module):
-    def __init__(self, num_entities, embedding_dim=2, volume_temp=1.0):
+    def __init__(self, num_entities, HPs:dict, embedding_dim=2, volume_temp=1.0):
         super().__init__()
         
         self.num_entities = num_entities
@@ -13,13 +13,13 @@ class BoxEmbeddingModel(nn.Module):
         # 1. Center Embedding (위치)
         # Center를 -3.0 ~ 3.0 정도로 넓게 퍼뜨림 (기존 -1~1)
         self.center_embeddings = nn.Embedding(num_entities, embedding_dim)
-        nn.init.uniform_(self.center_embeddings.weight, -4.0, 4.0)
+        nn.init.uniform_(self.center_embeddings.weight, -HPs["initial_center_range"], HPs["initial_center_range"])
 
         # 2. Offset Embedding (크기/너비)
         # 중요: 박스 크기는 무조건 양수여야 함.
         # 초기화: 너무 작으면(0에 수렴) 점이 되고, 너무 크면 학습이 안 됨.
         self.offset_embeddings = nn.Embedding(num_entities, embedding_dim)
-        nn.init.uniform_(self.offset_embeddings.weight, -2.0, -1.0)
+        nn.init.uniform_(self.offset_embeddings.weight, HPs["initial_offset_min"], HPs["initial_offset_max"])
 
     def get_boxes(self, indices):
         """

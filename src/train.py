@@ -9,7 +9,7 @@ import shutil
 import gc
 import numpy as np
 
-def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot_interval=20, filename="Test", color_dict=None):
+def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, snapshot_interval=20, filename="Test", level_dict=None):
     # 1. 데이터 준비 (Text -> Index 변환)
     # 학습 데이터는 (Child, Parent) 쌍으로 구성됩니다.
     # triples: [(Child, IsA, Parent), ...]
@@ -28,9 +28,10 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
     
     print("=== 학습 시작 ===")
     
-    margin = 3
-    vol_weight = 0.001
-    color_list = ["black", "green", "blue", "red"]
+    margin = HPs["margin"]
+    vol_loss_weight = HPs["vol_loss_weight"]
+    aspect_ratio_loss_weight = HPs["aspect_ratio_loss_weight"]  # 가중치
+    color_list = HPs["color_list"]
 
     for epoch in range(1, epochs + 1):
         model.train() # 학습 모드
@@ -55,9 +56,7 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
         p_diff = (p_offsets[:, 0] - p_offsets[:, 1]) ** 2
         aspect_loss = torch.mean(c_diff + p_diff)
         
-        aspect_weight = 0.2  # 가중치
-
-        loss = margin_loss + (vol_weight * volume_loss) + (aspect_weight*aspect_loss)
+        loss = margin_loss + (vol_loss_weight * volume_loss) + (aspect_ratio_loss_weight*aspect_loss)
         
         # Backward Pass: 파라미터 업데이트
         loss.backward()
@@ -74,8 +73,8 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
             fig, ax = plt.subplots(figsize=(8, 8))
             
             # 축 범위 고정 (박스가 움직이는 걸 잘 보려면 배경이 고정돼야 함)
-            ax.set_xlim(-12.0, 12.0) # 2.0 -> 5.0으로 확대
-            ax.set_ylim(-12.0, 12.0)
+            ax.set_xlim(-HPs["screen_size_x"], HPs["screen_size_x"]) # 2.0 -> 5.0으로 확대
+            ax.set_ylim(-HPs["screen_size_y"], HPs["screen_size_y"])
             ax.set_title(f"Box Embedding Training (Epoch {epoch})")
             ax.set_xlabel("Dimension 1")
             ax.set_ylabel("Dimension 2")
@@ -93,8 +92,8 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
                 
                 # 그룹별 색상 다르게 (시각적 디버깅용)
                 # Living Thing 계열은 파랑, My Class 계열은 빨강으로 표시되면 좋음
-                if color_dict is not None:
-                    color = color_list[color_dict[entity_name]]
+                if level_dict is not None:
+                    color = color_list[level_dict[entity_name]]
                 else:
                     color = "black"
                 # 사각형 객체 생성
@@ -122,7 +121,7 @@ def train_and_visualize(model, triples, entity2id, epochs=500, lr=0.01, snapshot
     
     print("=== GIF 변환 중... ===")
     frames = [imageio.imread(path) for path in image_paths]
-    imageio.mimsave('{}.gif'.format(filename), frames, fps=20)
+    imageio.mimsave('{}.gif'.format(filename), frames, fps=HPs["fps"])
     shutil.rmtree(temp_dir) # 청소
     print("=== 완료 ===")
 
