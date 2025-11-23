@@ -13,55 +13,61 @@ from tqdm import tqdm
 
 
 def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, snapshot_interval=20, filename="Test", level_dict=None):
-    # 1. 데이터 준비 (Text -> Index 변환)
-    # 학습 데이터는 (Child, Parent) 쌍으로 구성됩니다.
+    # prepare data : Text -> Index
+    # train data is composed of  (Child, Parent) pair.
     # triples: [(Child, IsA, Parent), ...]
     child_indices = torch.tensor([entity2id[t[0]] for t in triples], dtype=torch.long)
     parent_indices = torch.tensor([entity2id[t[2]] for t in triples], dtype=torch.long)
     
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
-    # 좌표 데이터 저장할 리스트
+    # list for saving coordinate data
     history = []
-    print("=== 학습 시작 ===")
+    print("=== Train Start ===")
     
+    # take loss hyperparameter from HPs
     margin = HPs["margin"]
     vol_loss_weight = HPs["vol_loss_weight"]
-    aspect_ratio_loss_weight = HPs["aspect_ratio_loss_weight"]  # 가중치
+    aspect_ratio_loss_weight = HPs["aspect_ratio_loss_weight"]  
+
+    # list to color entity 
     color_list = HPs["color_list"]
 
     for epoch in tqdm(range(1, epochs + 1), desc="Training", unit="epoch"):
-        model.train() # 학습 모드
-        optimizer.zero_grad() # 기울기 초기화
+        model.train() # train mode since now
+        optimizer.zero_grad() 
         
-        # positive sample 계산
+        # Caculate positive sample
         pos_dist, pos_vol, c_offsets, p_offsets = model(child_indices, parent_indices)
 
-        # negative sample 생성 및 계산
-        num_samples = child_indices.size(0)
-        random_parents = torch.randint(0, len(entity2id), (num_samples,))
-        # 더 정교하게 하려면, 우연히 정답히 뽑히지 않게 필터링
-        neg_dist, neg_vol, _, _ = model(child_indices, random_parents)
+        # Generate negative sample and calculate
+        if HPs["negative_sample"] is True:
+            num_samples = child_indices.size(0)
+            random_parents = torch.randint(0, len(entity2id), (num_samples,))
+            neg_dist, neg_vol, _, _ = model(child_indices, random_parents)
+        else:
+            neg_dist, neg_vol = 0,0
 
         # (1) margin loss = positive sample + negative sample
         margin_loss = F.relu(margin+pos_dist-neg_dist).mean()
+
         # (2) volume loss
         volume_loss = (pos_vol+neg_vol).mean()
         
-        # (3) Orthogonal Overlap(Cross problem) 해결을 위한 loss추가
+        # (3) Orthogonal Overlap(Cross problem) loss
         c_diff = (c_offsets[:, 0] - c_offsets[:, 1]) ** 2
         p_diff = (p_offsets[:, 0] - p_offsets[:, 1]) ** 2
         aspect_loss = torch.mean(c_diff + p_diff)
         
         loss = margin_loss + (vol_loss_weight * volume_loss) + (aspect_ratio_loss_weight*aspect_loss)
         
-        # Backward Pass: 파라미터 업데이트
+        # Backward Pass: update parameter
         loss.backward()
         optimizer.step()
         
-        # --- 시각화 및 스냅샷 저장 로직 ---
+        # --- Visualization and save snapshot ---
+        # just save the box data during train process
         if epoch % snapshot_interval == 0 or epoch == 1:
-            #tqdm.write(f"Epoch {epoch}/{epochs} | Loss: {loss.item():.4f}")
             
             with torch.no_grad():
                 min_coords, max_coords = model.get_all_boxes_for_visualization()
@@ -71,65 +77,13 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
                     'max' : max_coords,
                     'loss' : loss.item()
                 })
-            """
-            # 1. 현재 박스 좌표 가져오기 (GPU -> CPU)
-            min_coords, max_coords = model.get_all_boxes_for_visualization()
-            
-            # 2. 그림 그리기 (Matplotlib)
-            fig, ax = plt.subplots(figsize=(HPs["figure_size"], HPs["figure_size"]))
-            
-            # 축 범위 고정 (박스가 움직이는 걸 잘 보려면 배경이 고정돼야 함)
-            ax.set_xlim(-HPs["screen_size_x"], HPs["screen_size_x"]) # 2.0 -> 5.0으로 확대
-            ax.set_ylim(-HPs["screen_size_y"], HPs["screen_size_y"])
-            ax.set_title(f"Box Embedding Training (Epoch {epoch})")
-            ax.set_xlabel("Dimension 1")
-            ax.set_ylabel("Dimension 2")
-            ax.grid(True, linestyle='--', alpha=0.5)
-            
-            # 모든 Entity에 대해 박스 그리기
-            for entity_name, idx in entity2id.items():
-                # 해당 Entity의 좌표
-                x_min, y_min = min_coords[idx]
-                x_max, y_max = max_coords[idx]
-                
-                # 너비와 높이 계산
-                width = x_max - x_min
-                height = y_max - y_min
-                
-                # 그룹별 색상 다르게 (시각적 디버깅용)
-                # Living Thing 계열은 파랑, My Class 계열은 빨강으로 표시되면 좋음
-                if level_dict is not None:
-                    color = color_list[level_dict[entity_name]]
-                else:
-                    color = "black"
-                # 사각형 객체 생성
-                rect = patches.Rectangle(
-                    (x_min, y_min), width, height, 
-                    linewidth=2, edgecolor=color, facecolor='none', alpha=0.7
-                )
-                ax.add_patch(rect)
-                
-                # 텍스트도 겹치지 않게 작게
-                ax.text((x_min+x_max)/2, (y_min+y_max)/2, entity_name, 
-                        fontsize=10, ha='center', va='center', alpha=0.7)
-            
-            # [메모리 최적화 3] 파일로 저장하고 메모리 즉시 해제
-            save_path = os.path.join(temp_dir, f"frame_{epoch:05d}.png")
-            
-            # [용량 최적화 4] dpi=72 (웹용 표준)으로 낮춤. (기본 100)
-            plt.savefig(save_path, dpi=HPs["dpi"]) 
-            plt.close(fig) # Canvas 닫기 (필수)
-            gc.collect()   # 가비지 컬렉션 (필수)
-            
-            image_paths.append(save_path)
-            """
 
-    print("=== 학습 완료 ===")
-    print("==이미지 생성 중==")
+    print("=== Train Finish ===")
+    print("==Image Generation Start==")
     temp_dir = "temp_frames"
     if os.path.exists(temp_dir): shutil.rmtree(temp_dir)
     os.makedirs(temp_dir)
-    # GIF 생성을 위한 이미지들을 저장할 주소 리스트
+    # list to save images of each epoch
     image_paths = []
 
     for snap in tqdm(history, desc="Rendering GIF"):
@@ -140,27 +94,26 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
 
         fig, ax = plt.subplots(figsize=(HPs["figure_size"], HPs["figure_size"]))
             
-        # 축 범위 고정 (박스가 움직이는 걸 잘 보려면 배경이 고정돼야 함)
-        ax.set_xlim(-HPs["screen_size_x"], HPs["screen_size_x"]) # 2.0 -> 5.0으로 확대
+        # fix the axis of the image
+        ax.set_xlim(-HPs["screen_size_x"], HPs["screen_size_x"]) 
         ax.set_ylim(-HPs["screen_size_y"], HPs["screen_size_y"])
         ax.set_title(f"Box Embedding Training (Epoch {epoch})")
         ax.set_xlabel("Dimension 1")
         ax.set_ylabel("Dimension 2")
         ax.grid(True, linestyle='--', alpha=0.5)
         
-        # 모든 Entity에 대해 박스 그리기
+        # Draw box for every entity
         for entity_name, idx in entity2id.items():
-            # 해당 Entity의 좌표
+            # Coordinate of the entity
             x_min, y_min = min_coords[idx]
             x_max, y_max = max_coords[idx]
             
-            # 너비와 높이 계산
+            # Calculate width and height of the entitiy's box
             width = x_max - x_min
             height = y_max - y_min
             
-            # 그룹별 색상 다르게 (시각적 디버깅용)
-            # Living Thing 계열은 파랑, My Class 계열은 빨강으로 표시되면 좋음
-            if level_dict is not None:
+            # Assign different colors to boxes with different levels
+            if level_dict is not None and level_dict[entity_name] < len(color_list):
                 color = color_list[level_dict[entity_name]]
             else:
                 color = "black"
@@ -171,26 +124,26 @@ def train_and_visualize(model, triples, entity2id, HPs, epochs=500, lr=0.01, sna
             )
             ax.add_patch(rect)
             
-            # 텍스트도 겹치지 않게 작게
+            # text visualize setting
             ax.text((x_min+x_max)/2, (y_min+y_max)/2, entity_name, 
                     fontsize=10, ha='center', va='center', alpha=0.7)
         
-        # [메모리 최적화 3] 파일로 저장하고 메모리 즉시 해제
+        # save image as file and release memory
         save_path = os.path.join(temp_dir, f"frame_{epoch:05d}.png")
         
-        # [용량 최적화 4] dpi=72 (웹용 표준)으로 낮춤. (기본 100)
+        # use dpi from HPs (the higher dpi is, the better image quality)
         plt.savefig(save_path, dpi=HPs["dpi"]) 
-        plt.close(fig) # Canvas 닫기 (필수)
-        gc.collect()   # 가비지 컬렉션 (필수)
+        plt.close(fig) # Canvas close
+        gc.collect()   # Garbage collection
         
         image_paths.append(save_path)
         
-    print("==이미지 생성 완료==")
+    print("==Image Generation Done==")
 
-    print("=== GIF 변환 중... ===")
+    print("=== GIF Converting... ===")
     frames = [imageio.imread(path) for path in image_paths]
-    imageio.mimsave('{}.gif'.format(filename), frames, fps=HPs["fps"])
+    imageio.mimsave('./{}.gif'.format(filename), frames, fps=HPs["fps"])
     shutil.rmtree(temp_dir) # 청소
-    print("=== 완료 ===")
+    print("=== GIF Converting Done ===")
 
 

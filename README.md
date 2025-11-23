@@ -1,20 +1,16 @@
 # 📦 Box-Embedding-Unboxed
 > **Visualizing Geometric Reasoning & Topological Constraints in 2D Space**
 
-
-*(여기에 가장 잘 나온 최종 성공 GIF 경로를 넣으세요)*
-
 ## 1. Introduction
 **"Why Box embedding?"**
-![final gif](./gifs/final.gif)
+![final gif](./gifs/main.gif)
 
 In KG(Knowledge Graph), representing a knowledge(entity) as a point-vector in the embedding space makes hard to answer queries over the KG. It lacks the ability to represent Hierarchy and Uncertainty of knowledge. 
 
 For example, think of answering complex queries involving sets of entities(e.g., *“where did Canadian citizens with
 Turing Award graduate?”*) where each entities are represented as point-vector in the embedding space, It would be hard to imagine how answer point-vector of the query should be like. [(Ren et al., 2020)](https://arxiv.org/pdf/2002.05969)
 
-This project visualizes how model train the Hierarchy and Uncentainty of knowledge using geometric properties of Box embedding[(Vilnis et al., 208)](https://arxiv.org/pdf/2109.04997)
-
+This project visualizes how model train the Hierarchy and Uncentainty of knowledge using geometric properties of Box embedding[(Vilnis et al., 2018)](https://arxiv.org/pdf/2109.04997)
 
 ## 2. Key Features
 * **Geometric Reasoning:** Implement intersection and containment of knowledge in 2D space using box
@@ -24,38 +20,73 @@ This project visualizes how model train the Hierarchy and Uncentainty of knowled
     * **Aspect Ratio Regularization:** Prvent boxes making Orthogonal Overlap
 
 ## 3. Experiment & Analysis (Trouble Shooting)
+![wrong](./gifs/wrong_case.gif)
+
 The main point of this project is solving Topological trap with "Data-centric" method and dealing with several optimization problem
 
 ### 3.1. The Limitation of 2D Space (Blocking)
-* **Problem:** 2D plane(which I choose willfully to visualize box embedding) has unsufficient bypass compare to high-dimension. Thus, If there is an obstacle between the parent and the child
- 2차원 평면은 고차원에 비해 우회로가 부족합니다. 이로 인해 직계 부모(`Jazz` → `Music`) 관계는 학습되지만, 조상(`Jazz` → `Art`) 관계는 중간의 장애물(Negative Samples)에 가로막혀 수렴하지 못하는 **Blocking** 현상이 발생했습니다.
-* **Solution (Data-Centric Approach):**
-    * 모델의 파라미터를 튜닝하는 대신, **Transitive Closure (이행적 폐포)** 알고리즘을 적용했습니다.
-    * 데이터셋에 `(Grandchild, IsA, Grandparent)` 관계를 명시적으로 주입하여, 모델이 중간 장애물을 뛰어넘어 수렴하도록 유도했습니다.
+* **Problem 1(Topological trap):** 2D planes(which I choose willfully to visualize box embedding) have fewer detours compared to higher dimensions, and a topological trap was observed where the child could not reach the parent due to an obstacle intervening between the parent and child.(e.g., `Jazz` failed to getting into `Music` stably due to bothering form negative samples)
 
-### 3.2 Greedy box problem : Add loss to big box
-### 3.3.Boxes play tricks :  Anisotropy (비등방성)
-* **Observation:** 특정 박스들이 세로 혹은 가로로 길게 늘어지는 현상 관측.
-* **Analysis:** 이는 모델이 Negative Constraint가 없는 방향(Null Space)으로 박스를 확장하여 Loss를 줄이려는 기하학적 최적화 과정임을 확인했습니다.
-### 3.4 Sometimes, Hate is useful : The necessity of negative sampling
+* **Problem 2(Nesting Bottleneck):** Additionally, while the child-parent relationship is learned, the grandparent-grandchild relationship fails to be learned, which also caused a problem where the child box and parent box were not contained within the grandparent box(e.g., `Marketing` including `Brandinig` and `Ads` is far aprt from `Business`) This is because the boxes, trained in a limited 2D space, did not receive a strong enough incentive to go to the grandparent box.
+
+### 3.2.Boxes play tricks 
+* **Problem (Anisotropy):** The loss resulting from the boxes' negative samples is measured by the size of the overlap area between the negative samples; this led to an observation where the boxes unnaturally stretched in either the horizontal or vertical direction, and the negative samples overlapped in a cross-like pattern.(`CS` is too long vertically and make few loss with `Finance`, `Branding`... unrelated entities)
+
+### 3.3 Other optimization 
+![collapse](./gifs/collapse.gif)
+
+* **Problem (Mode Collapse & Volumes Explosion):** A phenomenon was observed where, when training boxes using only positive samples, boxes belonging to different domains were not distinguished, and the boxes reduced the loss simply by growing larger. Therefore, volume loss and negative samples were added.
+
+
+### 3.4 Solution to problems
+The problems are organically intertwined, meaning there is no single perfect solution for any one problem, but the main ideas used to address issue are as follows
+
+* Append Grandparent-Grandchild data : We added the grandparent-child relationship to the existing data, which previously only included parent-child relationships, This created a strong force allowing the whole family to overcome obstacles and gather, as the child box is pulled towards both the parent and the grandparent box, Additionally, it solved the problem where the child box was not contained within the grandparent box, even when the child box overlapped the parent box and the parent box overlapped the grandparent box. -> **Topological Trap & Nesting Bottleneck**
+
+* Use negative sampling : By adding negative samples, the model was trained to distinguish between different domains. -> **Mode Collapse**
+
+* Add loss to anisotrophy : Loss was designed to increase if the box shape was biased toward either the horizontal or vertical direction, which prevented the boxes from expanding in unnecessary directions, Furthermore, a box shape closer to a square helped reduce the frequency of topological trap occurrence and guided the model to learn in the correct direction. -> **Topological Trap & Anisotrophy**
+
+* Add loss to big volume : By adding a loss term to the box volume (or: size), this prevented the boxes from growing without limits during training. -> **Volume Explosion**
+
 
 ## 4. Conclusion
-**"Better Data > Better Model"**
-초기에는 Learning Rate나 Margin 튜닝에 집중했으나, 근본적인 해결책은 **데이터의 구조적 결함(Transitivity 부족)을 보완**하는 것이었습니다. 이를 통해 AI 모델링에서 아키텍처만큼이나 **데이터의 품질과 구조(Data Quality)**가 성능에 결정적임을 확인했습니다.
+**"Better Data > Better Model Architecture"**
 
-"Optimization Strategy: To handle the sparsity of hierarchical data (frequent root nodes vs. rare leaf nodes), I utilized the Adam optimizer, which adapts the learning rate for each embedding parameter individually, preventing frequent nodes from oscillating while ensuring rare nodes converge effectively."
+Through this project, visualizing the learning dynamics of Box Embeddings in a constrained 2D space provided critical insights into the interplay between data quality and model optimization.
+
+Initially, attempts were made to resolve the Topological Trap (Blocking) and Nesting Bottleneck solely by tuning hyperparameters such as learning rate and margin. However, these efforts only shifted the local minima rather than solving the fundamental geometric constraints.
+
+The breakthrough came from a Data-Centric approach: injecting Transitive Closure (Grandparent-Grandchild relations) into the dataset. By explicitly providing the model with "direct flight" connections (Grandchild-to-Grandparent), the model could bypass topological obstacles that were insurmountable in 2D space.This demonstrated that structural quality of data often outweighs complex model architecture adjustments, especially in geometrically constrained environments.
+
+This project goes beyond simple implementation; it serves as a visual proof of concepts for : 
+* **Geometric Reasoning**: Validating how logical entailment ($A \subset B$) translates to geometric containment. 
+* **Optimization Dynamics**: Identifying and resolving mode collapse, anisotropy, and topological traps using targeted regularization techniques.
+
+Ultimately, Unboxing the "Box" revealed that building a robust AI model requires not just minimizing loss, but deeply understanding the geometry of the latent space and the integrity of the data it learns from.
 
 ## 5. Tech Stack
-* **Language:** Python 3.10
-* **Framework:** PyTorch
-* **Visualization:** Matplotlib, ImageIO
+<img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white"/>
+<img src="https://img.shields.io/badge/PyTorch-2.9.0-EE4C2C?style=flat&logo=pytorch&logoColor=white"/>
+<img src="https://img.shields.io/badge/NumPy-2.3.4-013243?style=flat&logo=numpy&logoColor=white"/>
+<img src="https://img.shields.io/badge/Matplotlib-3.10.7-11557c?style=flat&logo=python&logoColor=white"/>
+<img src="https://img.shields.io/badge/tqdm-4.67.1-FFC107?style=flat&logo=python&logoColor=white"/>
+<img src="https://img.shields.io/badge/ImageIO-2.37.2-343a40?style=flat&logo=python&logoColor=white"/>
 
 
 
 ## 6. How to Run
 ```bash
+# 1. Clone the repository
+git clone https://github.com/shw707/Box-Embedding-Unboxed.git
+cd Box-Embedding-Unboxed
+
 # 1. Install dependencies
 pip install -r requirements.txt
 
 # 2. Train & Visualize
 python main.py --epochs 3000 --lr 0.005
+
+---
+## 🤝 Acknowledgement
+This project was developed with the assistance of **Google Gemini**, which provided insights into geometric interpretation and code optimization strategies.
