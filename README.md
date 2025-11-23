@@ -1,5 +1,24 @@
 # 📦 Box-Embedding-Unboxed
+<div align="center">
+
+<img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white"/>
+<img src="https://img.shields.io/badge/PyTorch-2.9.0-EE4C2C?style=flat&logo=pytorch&logoColor=white"/>
+<img src="https://img.shields.io/badge/Matplotlib-3.10.7-11557c?style=flat&logo=python&logoColor=white"/>
+<br>
+
+[![English](https://img.shields.io/badge/Language-English-blue?style=for-the-badge)](README.md)
+[![Korean](https://img.shields.io/badge/Language-Korean-red?style=for-the-badge)](README_KR.md)
+
+</div>
+
 > **Visualizing Geometric Reasoning & Topological Constraints in 2D Space**
+
+## 📑 Table of Contents
+- [1. Introduction](#1-Introduction)
+- [2. Key Features](#2-key-features)
+- [3. Experiment & Analysis (Core)](#3-experiment--analysis-trouble-shooting)
+- [4. Conclusion](#4-conclusion)
+- [5. How to Run](#5-how-to-run)
 
 ## 1. Introduction
 **"Why Box embedding?"**
@@ -65,17 +84,7 @@ This project goes beyond simple implementation; it serves as a visual proof of c
 
 Ultimately, Unboxing the "Box" revealed that building a robust AI model requires not just minimizing loss, but deeply understanding the geometry of the latent space and the integrity of the data it learns from.
 
-## 5. Tech Stack
-<img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white"/>
-<img src="https://img.shields.io/badge/PyTorch-2.9.0-EE4C2C?style=flat&logo=pytorch&logoColor=white"/>
-<img src="https://img.shields.io/badge/NumPy-2.3.4-013243?style=flat&logo=numpy&logoColor=white"/>
-<img src="https://img.shields.io/badge/Matplotlib-3.10.7-11557c?style=flat&logo=python&logoColor=white"/>
-<img src="https://img.shields.io/badge/tqdm-4.67.1-FFC107?style=flat&logo=python&logoColor=white"/>
-<img src="https://img.shields.io/badge/ImageIO-2.37.2-343a40?style=flat&logo=python&logoColor=white"/>
-
-
-
-## 6. How to Run
+## 5. How to Run
 ```bash
 # Clone the repository
 git clone https://github.com/shw707/Box-Embedding-Unboxed.git
@@ -110,7 +119,7 @@ python main.py --mode anisotropy --filename artifact_case --seed 42
 python main.py --mode collapse --filename collapse_case --seed 42
 ```
 
-## 7.Limitaions
+## 6.Limitaions
 
 ## 📚 References
 
