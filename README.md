@@ -77,33 +77,52 @@ Ultimately, Unboxing the "Box" revealed that building a robust AI model requires
 
 ## 6. How to Run
 ```bash
-# 1. Clone the repository
+# Clone the repository
 git clone https://github.com/shw707/Box-Embedding-Unboxed.git
 cd Box-Embedding-Unboxed
 
-# 1. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
-
-# 2. Train & Visualize
-python main.py --mode=([fine, collapse, anisotropy]) --filename=(str) --seed=(int)
-
-# quick start
-python main.py --mode=fine --filename=mybox --seed=42
-
-# collapse mode 
-python main.py --mode=collapse --filename=collapsebox --seed=42
 ```
-**Argument Explain**
+### 💻  Usage
+```
+python main.py --mode [MODE] --filename [NAME] --seed [INT]
+```
+| Argument | Type | Description | Options |
+| :--- | :--- | :--- | :--- |
+| **`--mode`** | `str` | **(Required)** Experiment scenario | `fine`, `anisotropy`, `collapse` |
+| `--filename` | `str` | Output GIF filename (default: built-in filename) | Any string |
+| `--seed` | `int` | Random seed for reproducibility | Any integer (e.g., `42`) |
+### 🧪 3. Scenarios (Demo)
+✅ Case 1: Success Model (Optimal Settings) Visualize how Transitive Closure and Regularization solve topological traps.
+```
+# Quick Start (Best Result)
+python main.py --mode fine --filename my_success_box --seed 42
+```
 
-**mode**(optional, default : fine) : use fine to get best model gif, collapse shows the model without negative sampling, anisotropy enable model's anisotropy problem.
 
-**filename**(optional, default : Built-in filename) : you file will saved as {filename}.gif
-
-**seed**(optional, default : randomness) : Giving seed makes your output always fixed. No seed makes random output every time.
-
+⚠️ Case 2: Anisotropy (Cross-shape Artifacts) Reproduce the "Cross-shape" artifacts caused by orthogonal overlap (without Aspect Ratio Reg).
+```
+python main.py --mode anisotropy --filename artifact_case --seed 42
+```
+❌ Case 3: Mode Collapse (Failure) Reproduce the "Clustering" phenomenon where distinct domains fail to separate (without Negative Sampling).
+```
+python main.py --mode collapse --filename collapse_case --seed 42
+```
 
 ## 7.Limitaion 
 
+## 📚 References
+
+This project implements the core concepts of Box Embeddings based on the following papers.
+
+**1. Box Embeddings (Foundational Concept)**
+* Vilnis, L., Li, X., Murty, S., & McCallum, A. (2018). **Probabilistic Embedding of Knowledge Graphs with Box Lattice Measures**. *ACL 2018*.
+    * *Implemented:* Box containment as logical entailment, intersection operation.
+
+**2. Query2Box (Parameterization & Logic)**
+* Ren, H., Hu, W., & Leskovec, J. (2020). **Query2Box: Reasoning over Knowledge Graphs in Vector Space Using Box Embeddings**. *ICLR 2020*.
+    * *Adopted:* Center-Offset parameterization, geometric reasoning logic.
 
 
 ## 🤝 Acknowledgement
