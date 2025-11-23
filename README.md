@@ -85,8 +85,27 @@ cd Box-Embedding-Unboxed
 pip install -r requirements.txt
 
 # 2. Train & Visualize
-python main.py --epochs 3000 --lr 0.005
+python main.py --mode=([fine, collapse, anisotropy]) --filename=(str) --seed=(int)
 
----
+# quick start
+python main.py --mode=fine --filename=mybox --seed=42
+
+# collapse mode 
+python main.py --mode=collapse --filename=collapsebox --seed=42
+```
+**Argument Explain**
+
+**mode**(optional, default : fine) : use fine to get best model gif, collapse shows the model without negative sampling, anisotropy enable model's anisotropy problem.
+
+**filename**(optional, default : Built-in filename) : you file will saved as {filename}.gif
+
+**seed**(optional, default : randomness) : Giving seed makes your output always fixed. No seed makes random output every time.
+
+
+## 7.Limitaion 
+
+
+
 ## 🤝 Acknowledgement
 This project was developed with the assistance of **Google Gemini**, which provided insights into geometric interpretation and code optimization strategies.
+
