@@ -8,7 +8,7 @@
 In KG(Knowledge Graph), representing a knowledge(entity) as a point-vector in the embedding space makes hard to answer queries over the KG. It lacks the ability to represent Hierarchy and Uncertainty of knowledge. 
 
 For example, think of answering complex queries involving sets of entities(e.g., *“where did Canadian citizens with
-Turing Award graduate?”*) where each entities are represented as point-vector in the embedding space, It would be hard to imagine how answer point-vector of the query should be like. [(Ren et al., 2020)](https://arxiv.org/pdf/2002.05969)
+Turing Award graduate?”*) where each entities are represented as point-vector in the embedding space, It is geometrically counter-intuitive to model such a set as a single point vector. Box Embeddings address this by mapping entities to hyper-rectangles (Boxes), where the box's volume naturally represents the set of answer entities. [(Ren et al., 2020)](https://arxiv.org/pdf/2002.05969)
 
 This project visualizes how model train the Hierarchy and Uncentainty of knowledge using geometric properties of Box embedding[(Vilnis et al., 2018)](https://arxiv.org/pdf/2109.04997)
 
@@ -16,8 +16,8 @@ This project visualizes how model train the Hierarchy and Uncentainty of knowled
 * **Geometric Reasoning:** Implement intersection and containment of knowledge in 2D space using box
 * **Custom Synthetic Dataset:** Tree-structure dataset consist of Mutual-Exclusive 3 domain(Science, Art, Business)
 * **Optimization:**
-    * **Volume Regularization:** : Prevent boxes being bigger without constraint
-    * **Aspect Ratio Regularization:** Prvent boxes making Orthogonal Overlap
+    * **Volume Regularization:**  Prevent boxes being bigger without constraint
+    * **Aspect Ratio Regularization:** Prevent boxes making Orthogonal Overlap
 
 ## 3. Experiment & Analysis (Trouble Shooting)
 ![wrong](./gifs/wrong_case.gif)
@@ -25,9 +25,9 @@ This project visualizes how model train the Hierarchy and Uncentainty of knowled
 The main point of this project is solving Topological trap with "Data-centric" method and dealing with several optimization problem
 
 ### 3.1. The Limitation of 2D Space (Blocking)
-* **Problem 1(Topological trap):** 2D planes(which I choose willfully to visualize box embedding) have fewer detours compared to higher dimensions, and a topological trap was observed where the child could not reach the parent due to an obstacle intervening between the parent and child.(e.g., `Jazz` failed to getting into `Music` stably due to bothering form negative samples)
+* **Problem 1(Topological Trap):** 2D planes(which I choose willfully to visualize box embedding) have fewer detours compared to higher dimensions, and a topological trap was observed where the child could not reach the parent due to an obstacle intervening between the parent and child.(e.g., `Jazz` failed to getting into `Music` stably due to bothering form negative samples)
 
-* **Problem 2(Nesting Bottleneck):** Additionally, while the child-parent relationship is learned, the grandparent-grandchild relationship fails to be learned, which also caused a problem where the child box and parent box were not contained within the grandparent box(e.g., `Marketing` including `Brandinig` and `Ads` is far aprt from `Business`) This is because the boxes, trained in a limited 2D space, did not receive a strong enough incentive to go to the grandparent box.
+* **Problem 2(Nesting Bottleneck):** Additionally, while the child-parent relationship is learned, the grandparent-grandchild relationship fails to be learned, which also caused a problem where the child box and parent box were not contained within the grandparent box(e.g., `Marketing` including `Brandinig` and `Ads` is far apart from `Business`) This is because the boxes, trained in a limited 2D space, did not receive a strong enough incentive to go to the grandparent box.
 
 ### 3.2.Boxes play tricks 
 * **Problem (Anisotropy):** The loss resulting from the boxes' negative samples is measured by the size of the overlap area between the negative samples; this led to an observation where the boxes unnaturally stretched in either the horizontal or vertical direction, and the negative samples overlapped in a cross-like pattern.(`CS` is too long vertically and make few loss with `Finance`, `Branding`... unrelated entities)
@@ -110,7 +110,7 @@ python main.py --mode anisotropy --filename artifact_case --seed 42
 python main.py --mode collapse --filename collapse_case --seed 42
 ```
 
-## 7.Limitaion 
+## 7.Limitaions
 
 ## 📚 References
 
