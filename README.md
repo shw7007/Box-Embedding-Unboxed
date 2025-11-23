@@ -133,7 +133,3 @@ This project implements the core concepts of Box Embeddings based on the followi
 * Ren, H., Hu, W., & Leskovec, J. (2020). **Query2Box: Reasoning over Knowledge Graphs in Vector Space Using Box Embeddings**. *ICLR 2020*.
     * *Adopted:* Center-Offset parameterization, geometric reasoning logic.
 
-
-## 🤝 Acknowledgement
-This project was developed with the assistance of **Google Gemini**, which provided insights into geometric interpretation and code optimization strategies.
-
